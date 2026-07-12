@@ -1,0 +1,69 @@
+{
+    "welcome_message": "👋 <b>Hello, {name}!</b>\n\nI'm a bot for monitoring Minecraft servers. I can show you any server's status or track it in your chat.\n\n🔹 <b>DM Commands:</b>\n/info &lt;ip&gt; — Server information\n/players &lt;ip&gt; — Player list\n\n🔹 <b>Group Commands:</b>\n/set_chat_server &lt;ip&gt; — Bind a server\n/server_conf — Monitoring settings\n\nChoose an action below:",
+    "choose_language": "🌐 Пожалуйста, выберите язык / Please choose your language:",
+
+    "pinging": "Checking",
+    "ssrf_blocked": "This address is blocked. Pinging local and private networks is not allowed.",
+    "anti_scan_blocked": "You have exceeded the port limit for this IP address. Anti-scan protection triggered.",
+    "dns_failed": "Could not resolve server address <b>{address}</b>. Please check the domain or IP.",
+    "cooldown_alert": "⏳ Data was recently updated.\nNext refresh available in {seconds} sec.",
+
+    "info_usage_error": "ℹ️ Usage: <code>/info &lt;ip&gt;[:port]</code>",
+    "group_only_error": "❌ This command only works in groups.",
+    "server_set_usage_error": "ℹ️ Usage: <code>/set_chat_server &lt;ip&gt;[:port]</code>",
+    "server_bind_success": "✅ Server successfully bound to this chat!\nSettings: /server_conf",
+    "no_server_bound_error": "⚠️ No server is bound to this chat.\nAn admin can use <code>/set_chat_server</code>.",
+
+    "status_online": "🟢 Online",
+    "status_offline": "🔴 Offline",
+    "status": "Status",
+    "players": "Players",
+    "latency": "Latency",
+    "version": "Version",
+    "in_game": "Online",
+    "and_more": "and {count} more…",
+    "data_actual_at": "Data as of",
+
+    "players_offline": "🔴 Server <b>{address}</b> is offline.",
+    "players_hidden": "👥 Players: <b>{count}</b>. List is hidden by the server.",
+    "players_title": "📜 <b>Players on {address}:</b>",
+
+    "help_text": "❓ <b>MineTracker Help</b>\n\nHere you can find information about the bot's features and how to use it.\n\nChoose a section:",
+    "features_text": "🚀 <b>Bot Features</b>\n\n🔹 <b>Free Access:</b>\n• Ping any server: /info, /players\n• Monitor 1 server in a chat (updates every 5 min)\n• Customize display: MOTD, IP, version, ping, players\n\n🔹 <b>Premium Access (coming soon):</b>\n• Monitor up to 5 servers\n• Updates every 2 minutes\n• Minecraft mod integration\n• Game ↔ Telegram chat bridge\n• Advanced analytics",
+    "about_text": "ℹ️ <b>About MineTracker</b>\n\nMineTracker is a bot for real-time Minecraft server monitoring.\n\n<b>How to use:</b>\n1. Type /info &lt;server ip&gt; to check status\n2. Add the bot to a group and use /set_chat_server for monitoring\n3. Configure display with /server_conf\n\nContact developer: @OpenClawMarkTin",
+
+    "link_expired": "⏳ Link expired, please send the command again.",
+    "update_commands_success": "✅ Menu commands successfully updated.",
+
+    "moder_title": "👑 <b>Admin Dashboard</b>",
+    "moder_uptime": "⏱ Uptime",
+    "moder_total_pings": "📡 Total Pings",
+    "moder_total_users": "👤 Users",
+    "moder_total_servers": "🖥 Monitored Servers",
+
+    "banlist_users_empty": "📜 Banned users list is empty.",
+    "banlist_users_title": "🚫 <b>Banned Users:</b>\n",
+    "banlist_ips_empty": "🚫 Banned IPs list is empty.",
+    "banlist_ips_title": "🚫 <b>Banned IPs:</b>\n",
+    "server_list_empty": "📡 No servers being monitored.",
+    "server_list_title": "📡 <b>Monitored Servers:</b>\n",
+    "unavailable_chat": "Unavailable chat",
+
+    "stats_panel": "📊 <b>Statistics</b>\nUnique users: {users_count}\nTotal command events: {events_count}\nAverage response time: {avg_time} ms",
+    "moderation_panel": "🛡 <b>Moderation Panel</b>\nChoose an action:",
+
+    "btn_my_servers": "🖥 My Servers",
+    "btn_settings": "⚙️ Settings",
+    "btn_help": "❓ Help",
+    "btn_features": "🚀 Features",
+    "btn_about": "ℹ️ About",
+    "btn_back": "◀️ Back",
+    "btn_refresh": "🔄 Refresh",
+    "btn_notify_toggle": "🔔 Notifications: On/Off",
+    "btn_resend": "🔄 Recreate message",
+    "btn_delete_server": "🗑 Delete server",
+    "btn_banlist_users": "📜 Banlist (Users)",
+    "btn_banlist_ips": "🚫 Banlist (IPs)",
+    "btn_server_list": "📡 Server list",
+    "btn_close": "✖ Close"
+}

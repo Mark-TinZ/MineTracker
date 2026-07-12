@@ -1,0 +1,69 @@
+{
+    "welcome_message": "👋 <b>Привет, {name}!</b>\n\nЯ бот для мониторинга серверов Minecraft. Могу показать статус любого сервера или следить за ним в твоём чате.\n\n🔹 <b>Команды для ЛС:</b>\n/info &lt;ip&gt; — Информация о сервере\n/players &lt;ip&gt; — Список игроков\n\n🔹 <b>Команды для групп:</b>\n/set_chat_server &lt;ip&gt; — Привязать сервер\n/server_conf — Настройки мониторинга\n\nВыберите действие ниже:",
+    "choose_language": "🌐 Пожалуйста, выберите язык / Please choose your language:",
+
+    "pinging": "Проверяю",
+    "ssrf_blocked": "Этот адрес заблокирован. Пинг локальных и приватных сетей запрещён.",
+    "anti_scan_blocked": "Вы превысили лимит портов для этого IP-адреса. Срабатывает защита от сканирования.",
+    "dns_failed": "Не удалось определить адрес сервера <b>{address}</b>. Проверьте правильность домена или IP.",
+    "cooldown_alert": "⏳ Данные недавно обновлялись.\nСледующее обновление через {seconds} сек.",
+
+    "info_usage_error": "ℹ️ Использование: <code>/info &lt;ip&gt;[:port]</code>",
+    "group_only_error": "❌ Эта команда работает только в группах.",
+    "server_set_usage_error": "ℹ️ Использование: <code>/set_chat_server &lt;ip&gt;[:port]</code>",
+    "server_bind_success": "✅ Сервер успешно привязан к этому чату!\nНастройки: /server_conf",
+    "no_server_bound_error": "⚠️ К этому чату не привязан сервер.\nАдминистратор может использовать <code>/set_chat_server</code>.",
+
+    "status_online": "🟢 Онлайн",
+    "status_offline": "🔴 Оффлайн",
+    "status": "Статус",
+    "players": "Игроки",
+    "latency": "Пинг",
+    "version": "Версия",
+    "in_game": "В игре",
+    "and_more": "и ещё {count}…",
+    "data_actual_at": "Данные на",
+
+    "players_offline": "🔴 Сервер <b>{address}</b> недоступен.",
+    "players_hidden": "👥 Игроков: <b>{count}</b>. Список скрыт сервером.",
+    "players_title": "📜 <b>Игроки на {address}:</b>",
+
+    "help_text": "❓ <b>Справка MineTracker</b>\n\nЗдесь вы найдёте информацию о возможностях бота и способах его использования.\n\nВыберите раздел:",
+    "features_text": "🚀 <b>Возможности бота</b>\n\n🔹 <b>Бесплатный доступ:</b>\n• Пинг любого сервера: /info, /players\n• Мониторинг 1 сервера в чате (обновление каждые 5 мин)\n• Настройка отображения: MOTD, IP, версия, пинг, игроки\n\n🔹 <b>Платный доступ (скоро):</b>\n• Мониторинг до 5 серверов\n• Обновление каждые 2 минуты\n• Связка с Minecraft-модом\n• Дублирование чата: игра ↔ Telegram\n• Расширенная аналитика",
+    "about_text": "ℹ️ <b>О боте MineTracker</b>\n\nMineTracker — бот для мониторинга Minecraft-серверов в реальном времени.\n\n<b>Как использовать:</b>\n1. Напишите /info &lt;ip сервера&gt; чтобы узнать статус\n2. Добавьте бота в группу и используйте /set_chat_server для мониторинга\n3. Настройте отображение через /server_conf\n\nСвязаться с разработчиком: @OpenClawMarkTin",
+
+    "link_expired": "⏳ Ссылка устарела, отправьте команду заново.",
+    "update_commands_success": "✅ Команды меню успешно обновлены.",
+
+    "moder_title": "👑 <b>Панель администратора</b>",
+    "moder_uptime": "⏱ Аптайм",
+    "moder_total_pings": "📡 Всего пингов",
+    "moder_total_users": "👤 Пользователей",
+    "moder_total_servers": "🖥 Серверов на мониторинге",
+
+    "banlist_users_empty": "📜 Список заблокированных пользователей пуст.",
+    "banlist_users_title": "🚫 <b>Заблокированные пользователи:</b>\n",
+    "banlist_ips_empty": "🚫 Список заблокированных IP пуст.",
+    "banlist_ips_title": "🚫 <b>Заблокированные IP:</b>\n",
+    "server_list_empty": "📡 Нет серверов на мониторинге.",
+    "server_list_title": "📡 <b>Мониторинг серверов:</b>\n",
+    "unavailable_chat": "Недоступный чат",
+
+    "stats_panel": "📊 <b>Статистика</b>\nУникальных пользователей: {users_count}\nВсего вызовов команд: {events_count}\nСреднее время отклика: {avg_time} мс",
+    "moderation_panel": "🛡 <b>Панель модерации</b>\nВыберите действие:",
+
+    "btn_my_servers": "🖥 Мои серверы",
+    "btn_settings": "⚙️ Настройки",
+    "btn_help": "❓ Помощь",
+    "btn_features": "🚀 Возможности",
+    "btn_about": "ℹ️ О боте",
+    "btn_back": "◀️ Назад",
+    "btn_refresh": "🔄 Обновить",
+    "btn_notify_toggle": "🔔 Уведомления: Вкл/Выкл",
+    "btn_resend": "🔄 Пересоздать сообщение",
+    "btn_delete_server": "🗑 Удалить сервер",
+    "btn_banlist_users": "📜 Банлист (Юзеры)",
+    "btn_banlist_ips": "🚫 Банлист (IP)",
+    "btn_server_list": "📡 Список серверов",
+    "btn_close": "✖ Закрыть"
+}
