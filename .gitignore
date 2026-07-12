@@ -10,3 +10,4 @@ wheels/
 .venv
 servers.db
 config.yaml
+/.env
