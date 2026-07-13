@@ -45,3 +45,14 @@ class RedisCacheManager:
         """
         key = f"commands_setup:{version}:{chat_id}:{role}"
         await self.redis.set(key, "1", ex=ttl)
+
+    async def get_user_lang(self, tg_id: int) -> Optional[str]:
+        """Получает закешированный язык пользователя."""
+        key = f"user_lang:{tg_id}"
+        lang = await self.redis.get(key)
+        return lang
+
+    async def set_user_lang(self, tg_id: int, lang: str, ttl: int = 86400) -> None:
+        """Сохраняет язык пользователя в кеш. По умолчанию на 24 часа."""
+        key = f"user_lang:{tg_id}"
+        await self.redis.set(key, lang, ex=ttl)
