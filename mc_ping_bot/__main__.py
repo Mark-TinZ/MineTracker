@@ -73,6 +73,14 @@ async def main():
     
     from mc_ping_bot.bot.middlewares.rate_limit import RateLimitMiddleware
     from mc_ping_bot.bot.middlewares.album import AlbumMiddleware
+    from mc_ping_bot.bot.middlewares.i18n import LanguageMiddleware, I18nMiddleware
+
+    # Outer middleware для определения языка (до фильтров)
+    dp.update.outer_middleware(LanguageMiddleware(cache_manager, AsyncSessionLocal))
+
+    # Inner middleware для инжекта переводчика
+    dp.message.middleware(I18nMiddleware())
+    dp.callback_query.middleware(I18nMiddleware())
 
     # Rate Limit применяется к конкретным типам апдейтов
     rate_limit_mdw = RateLimitMiddleware(redis_client, rate_limit=30)

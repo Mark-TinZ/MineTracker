@@ -1,93 +1,96 @@
-from aiogram import F, Router
-from aiogram.filters import CommandStart
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
-from sqlalchemy import select
+from aiogram import Router, F
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup
+from aiogram.filters import CommandStart, Command
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from mc_ping_bot.db.models import User
+from mc_ping_bot.services.i18n import I18n, current_locale
+from mc_ping_bot.services.cache import RedisCacheManager
 
-router = Router()
+router = Router(name="start_router")
+# Обрабатываем команды только в ЛС
 router.message.filter(F.chat.type == "private")
 
 
-def get_start_kb() -> InlineKeyboardMarkup:
-    """Клавиатура с выбором языка и меню возможностей."""
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="🇷🇺 Русский", callback_data="lang_ru"),
-            InlineKeyboardButton(text="🇬🇧 English", callback_data="lang_en")
-        ],
-        [
-            InlineKeyboardButton(text="🚀 Возможности", callback_data="bot_features"),
-            InlineKeyboardButton(text="ℹ️ О боте", callback_data="bot_info")
-        ]
-    ])
+def get_lang_kb(i18n: I18n) -> InlineKeyboardMarkup:
+    """Клавиатура с выбором языка (динамическая)."""
+    builder = InlineKeyboardBuilder()
+    builder.button(text=i18n.get("btn-lang-ru"), callback_data="lang_ru")
+    builder.button(text=i18n.get("btn-lang-en"), callback_data="lang_en")
+    builder.adjust(2)
+    return builder.as_markup()
+
+def get_main_menu_kb(i18n: I18n) -> InlineKeyboardMarkup:
+    """Главное меню возможностей (динамическая)."""
+    builder = InlineKeyboardBuilder()
+    builder.button(text=i18n.get("btn-features"), callback_data="bot_features")
+    builder.button(text=i18n.get("btn-info"), callback_data="bot_info")
+    builder.adjust(2)
+    return builder.as_markup()
 
 
 @router.message(CommandStart())
-async def cmd_start(message: Message, session: AsyncSession):
-    """
-    Обработчик команды /start.
-    """
+async def cmd_start(message: Message, session: AsyncSession, i18n: I18n):
+    """Обработчик команды /start."""
     user = await session.scalar(select(User).where(User.tg_id == message.from_user.id))
     
-    if not user:
-        user = User(tg_id=message.from_user.id, lang="ru")
-        session.add(user)
+    if user:
+        # Пользователь зарегистрирован, выводим сразу сообщение /start
+        await message.answer(
+            i18n.get("msg-welcome-main"),
+            reply_markup=get_main_menu_kb(i18n),
+            parse_mode="HTML"
+        )
     else:
-        user.lang = "ru"
-        
-    await session.commit()
-    
-    text = (
-        "👋 <b>Добро пожаловать в MineTracker!</b>\n\n"
-        "Мощный и быстрый бот для мониторинга Minecraft серверов. "
-        "Мы защитим вас от спама, покажем статус онлайна прямо в вашей группе и поможем управлять сервером!\n\n"
-        "Выберите язык для продолжения / Choose your language:"
-    )
-    
-    await message.answer(text, reply_markup=get_start_kb(), parse_mode="HTML")
+        # Пользователь НЕ зарегистрирован, выводим сообщение о выборе языка
+        await message.answer(
+            i18n.get("msg-welcome-new"),
+            reply_markup=get_lang_kb(i18n),
+            parse_mode="HTML"
+        )
 
 
 @router.callback_query(F.data.startswith("lang_"))
-async def cb_language(call: CallbackQuery, session: AsyncSession):
-    """Обработчик выбора языка."""
+async def cb_language(call: CallbackQuery, session: AsyncSession, i18n: I18n):
+    """Обработчик выбора языка (регистрация и смена языка)."""
     lang_code = call.data.split("_")[1]
     
     user = await session.scalar(select(User).where(User.tg_id == call.from_user.id))
-    if user:
-        user.lang = lang_code
-        await session.commit()
     
-    text = "✅ Язык установлен на Русский! Используйте /help для вызова меню." if lang_code == "ru" else "✅ Language set to English! Use /help to open menu."
-    await call.message.edit_text(text)
-    await call.answer()
-
-
-@router.callback_query(F.data == "bot_features")
-async def cb_bot_features(call: CallbackQuery):
-    """Отправка текста о возможностях (Бесплатный тариф)."""
-    text = (
-        "🚀 <b>Возможности (Бесплатный тариф)</b>\n\n"
-        "🔹 Пинг сервера раз в <b>300 секунд</b> (5 минут).\n"
-        "🔹 Мониторинг <b>1 сервера</b> для одной группы.\n"
-        "🔹 Защита от поддельных IP (SSRF) и спама.\n"
-        "🔹 Подробная сводка по онлайну и MOTD.\n\n"
-        "Чтобы начать, добавьте бота в группу и используйте <code>/set_chat_server &lt;ip&gt;</code>!"
+    if not user:
+        # Записываем в БД нового пользователя
+        user = User(tg_id=call.from_user.id, lang=lang_code)
+        session.add(user)
+    else:
+        # Смена языка для существующего
+        user.lang = lang_code
+        
+    await session.commit()
+    
+    # Чтобы язык применился прямо сейчас в рамках этого коллбека, обновляем contextvars
+    current_locale.set(lang_code)
+    
+    # Также желательно обновить Redis-кэш, чтобы следующий запрос не взял старый язык.
+    # В идеале прокинуть cache_manager через middleware, но можно и так:
+    # TODO: Внедрить cache_manager в хендлеры и вызывать await cache_manager.set_user_lang(call.from_user.id, lang_code)
+    
+    text = i18n.get("msg-lang-set") + "\n\n" + i18n.get("msg-welcome-main")
+    
+    await call.message.edit_text(
+        text,
+        reply_markup=get_main_menu_kb(i18n),
+        parse_mode="HTML"
     )
-    # Используем answer для нового сообщения, чтобы не перезаписывать приветствие
-    await call.message.answer(text, parse_mode="HTML")
     await call.answer()
 
 
-@router.callback_query(F.data == "bot_info")
-async def cb_bot_info(call: CallbackQuery):
-    """Отправка информации о боте."""
-    text = (
-        "ℹ️ <b>О боте MineTracker</b>\n\n"
-        "Бот создан для владельцев серверов и игровых комьюнити. "
-        "Позволяет следить за статусом сервера в реальном времени, "
-        "удерживая активность в чате и объединяя игроков."
+@router.message(Command("language"))
+async def cmd_language(message: Message, i18n: I18n):
+    """Принудительная смена языка."""
+    await message.answer(
+        i18n.get("msg-welcome-new"),
+        reply_markup=get_lang_kb(i18n),
+        parse_mode="HTML"
     )
-    await call.message.answer(text, parse_mode="HTML")
-    await call.answer()
