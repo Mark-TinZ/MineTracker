@@ -201,9 +201,11 @@ pip install -r requirements.txt
 
 
 ```bash
+# Если использовали uv:
+uv run alembic upgrade head
 
+# Если используете стандартный venv (с активированным окружением):
 alembic upgrade head
-
 ```
 
 
@@ -213,9 +215,11 @@ alembic upgrade head
 
 
 ```bash
+# Если использовали uv:
+uv run python -m mc_ping_bot
 
+# Если используете стандартный venv (с активированным окружением):
 python -m mc_ping_bot
-
 ```
 
 

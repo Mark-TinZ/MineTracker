@@ -1,9 +1,0 @@
-# Example configuration for mc_ping_bot
-
-bot_token: "YOUR_BOT_TOKEN_HERE"
-owner_id: 0  # Telegram user ID of the bot owner
-update_interval: 60  # Seconds between status updates
-database_file: "bot.db"  # Path to SQLite database file
-
-# The bot reads this file via `load_config()` in `main.py`. Copy it to `config.yaml`
-# and replace the placeholder values with your actual settings.
