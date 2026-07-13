@@ -21,7 +21,6 @@ from mc_ping_bot.services.monitor import subscription_downgrade_worker
 
 # Импорт хендлеров и миддлварей
 from mc_ping_bot.bot.handlers import setup_routers
-from mc_ping_bot.bot.middlewares.rate_limit import RateLimitMiddleware
 
 
 class DatabaseMiddleware(BaseMiddleware):
@@ -72,10 +71,16 @@ async def main():
     # Outer middleware срабатывает ДО любых фильтров, что идеально для получения БД-сессии
     dp.update.outer_middleware(DatabaseMiddleware(AsyncSessionLocal))
     
+    from mc_ping_bot.bot.middlewares.rate_limit import RateLimitMiddleware
+    from mc_ping_bot.bot.middlewares.album import AlbumMiddleware
+
     # Rate Limit применяется к конкретным типам апдейтов
     rate_limit_mdw = RateLimitMiddleware(redis_client, rate_limit=30)
     dp.message.middleware(rate_limit_mdw)
     dp.callback_query.middleware(rate_limit_mdw)
+    
+    album_mdw = AlbumMiddleware(latency=0.6)
+    dp.message.middleware(album_mdw)
 
     # 7. Подключение роутеров через бота
     setup_routers(dp)
