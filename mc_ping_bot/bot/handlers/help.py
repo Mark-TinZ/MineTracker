@@ -2,6 +2,7 @@ from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from mc_ping_bot.bot.states import TicketStates
 
@@ -52,14 +53,58 @@ async def cb_create_ticket(call: CallbackQuery, state: FSMContext):
 
 
 @router.message(TicketStates.waiting_for_message)
-async def process_ticket_message(message: Message, state: FSMContext):
+async def process_ticket_message(message: Message, state: FSMContext, session: AsyncSession, album: list = None):
     """Обработчик входящего сообщения для тикета."""
-    # В будущем здесь будет логика INSERT INTO tickets 
-    # или отправка форварда сообщения в спец. чат администраторов.
+    from mc_ping_bot.config import config
+    from mc_ping_bot.db.models import Ticket
     
-    await message.answer(
-        "✅ <b>Тикет успешно создан!</b>\n\n"
-        "Администраторы рассмотрят ваше обращение в ближайшее время.",
-        parse_mode="HTML"
+    if not config.admin_chat_id:
+        await message.answer("⚠️ Сервис модерации временно недоступен (не настроен admin_chat_id).")
+        await state.clear()
+        return
+
+    username = message.from_user.username or "Нет юзернейма"
+    header_text = (
+        f"🎫 <b>Новый тикет</b>\n"
+        f"👤 От: @{username} (ID: <code>{message.from_user.id}</code>)\n"
     )
+    
+    try:
+        header_msg = await message.bot.send_message(config.admin_chat_id, header_text, parse_mode="HTML")
+        admin_message_ids = [header_msg.message_id]
+        
+        # Копируем контент
+        if album:
+            # Используем copy_messages, чтобы телеграм склеил их обратно в альбом
+            message_ids = [msg.message_id for msg in album]
+            copied_messages = await message.bot.copy_messages(
+                chat_id=config.admin_chat_id,
+                from_chat_id=message.chat.id,
+                message_ids=message_ids
+            )
+            for m_id in copied_messages:
+                admin_message_ids.append(m_id.message_id)
+        else:
+            copied = await message.copy_to(config.admin_chat_id)
+            admin_message_ids.append(copied.message_id)
+            
+        # Сохраняем в БД
+        ticket = Ticket(
+            user_id=message.from_user.id,
+            admin_message_ids=admin_message_ids,
+            status="open"
+        )
+        session.add(ticket)
+        await session.commit()
+        
+        await message.answer(
+            "✅ <b>Тикет успешно создан и передан модераторам!</b>\n\n"
+            "Ожидайте ответа, он придет прямо в этот чат.",
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        await message.answer("❌ Произошла ошибка при отправке тикета. Попробуйте позже.")
+        print(f"Ticket Error: {e}")
+        
     await state.clear()
+
