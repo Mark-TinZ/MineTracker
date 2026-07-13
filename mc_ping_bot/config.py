@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     bot_token: str
     db_dsn: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/mc_ping"
     redis_url: str = "redis://localhost:6379/0"
+    admin_chat_id: int = 0
     commands_version: str = "v1"
 
     # Настройки Pydantic для чтения .env файла

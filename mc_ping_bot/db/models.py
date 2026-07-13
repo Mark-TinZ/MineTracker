@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint, func
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -75,3 +76,15 @@ class MonitoredServer(Base):
     # Связи
     chat: Mapped["Chat"] = relationship("Chat", back_populates="monitored_servers")
     server: Mapped["Server"] = relationship("Server", back_populates="monitors")
+
+
+class Ticket(Base):
+    __tablename__ = "tickets"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, index=True, nullable=False)
+    # Массив ID сообщений в админском чате (включая шапку и все медиафайлы альбома)
+    admin_message_ids: Mapped[list[int]] = mapped_column(ARRAY(BigInteger), default=list, server_default='{}', nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="open", server_default="open", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
