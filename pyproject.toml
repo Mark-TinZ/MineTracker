@@ -15,4 +15,6 @@ dependencies = [
     "structlog>=24.0.0",
     "asyncpg>=0.29.0",
     "redis>=5.0.0",
+    "fluent-runtime>=0.4.0",
+    "fluent-syntax>=0.19.0",
 ]
