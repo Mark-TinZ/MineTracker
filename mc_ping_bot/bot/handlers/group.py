@@ -7,32 +7,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mc_ping_bot.db.models import Chat, MonitoredServer, Server
 from mc_ping_bot.services.minecraft import MinecraftService
-from mc_ping_bot.bot.commands_setup import GROUP_COMMANDS
+from mc_ping_bot.services.i18n import I18n
 
 router = Router()
 router.message.filter(F.chat.type.in_({"group", "supergroup"}))
 
 
 @router.my_chat_member(ChatMemberUpdatedFilter(member_status_changed=IS_NOT_MEMBER >> MEMBER))
-async def bot_added_to_group(event: ChatMemberUpdated, bot: Bot):
+async def bot_added_to_group(event: ChatMemberUpdated, bot: Bot, i18n: I18n):
     if event.chat.type not in ["group", "supergroup"]:
         return
         
     await bot.send_message(
         event.chat.id,
-        "👋 Всем привет! Я MineTracker.\n"
-        "Чтобы настроить мониторинг сервера в этом чате, администратор должен использовать команду <code>/set_chat_server &lt;ip&gt;</code>",
+        i18n.get("msg-group-welcome"),
         parse_mode="HTML"
     )
-    
-    try:
-        await bot.set_my_commands(
-            GROUP_COMMANDS,
-            scope=BotCommandScopeChat(chat_id=event.chat.id)
-        )
-    except Exception:
-        pass
-
 
 
 @router.message(Command("set_chat_server"))

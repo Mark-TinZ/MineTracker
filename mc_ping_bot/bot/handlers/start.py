@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from mc_ping_bot.db.models import User
 from mc_ping_bot.services.i18n import I18n, current_locale
-from mc_ping_bot.services.cache import RedisCacheManager
+from mc_ping_bot.services.minecraft import MinecraftService
 
 router = Router(name="start_router")
 # Обрабатываем команды только в ЛС
@@ -53,7 +53,7 @@ async def cmd_start(message: Message, session: AsyncSession, i18n: I18n):
 
 
 @router.callback_query(F.data.startswith("lang_"))
-async def cb_language(call: CallbackQuery, session: AsyncSession, i18n: I18n):
+async def cb_language(call: CallbackQuery, session: AsyncSession, i18n: I18n, mc_service: MinecraftService):
     """Обработчик выбора языка (регистрация и смена языка)."""
     lang_code = call.data.split("_")[1]
     
@@ -72,9 +72,8 @@ async def cb_language(call: CallbackQuery, session: AsyncSession, i18n: I18n):
     # Чтобы язык применился прямо сейчас в рамках этого коллбека, обновляем contextvars
     current_locale.set(lang_code)
     
-    # Также желательно обновить Redis-кэш, чтобы следующий запрос не взял старый язык.
-    # В идеале прокинуть cache_manager через middleware, но можно и так:
-    # TODO: Внедрить cache_manager в хендлеры и вызывать await cache_manager.set_user_lang(call.from_user.id, lang_code)
+    # Обновляем Redis-кэш, чтобы следующий запрос не взял старый язык.
+    await mc_service.cache.set_user_lang(call.from_user.id, lang_code)
     
     text = i18n.get("msg-lang-set") + "\n\n" + i18n.get("msg-welcome-main")
     

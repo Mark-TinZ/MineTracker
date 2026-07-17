@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from mc_ping_bot.bot.commands_setup import update_user_commands
 from mc_ping_bot.bot.i18n import i18n
 from mc_ping_bot.db.models import User
+from mc_ping_bot.services.i18n import I18n
 from mc_ping_bot.services.minecraft import MinecraftService
 
 router = Router()
@@ -111,11 +112,19 @@ async def cb_refresh_info(call: CallbackQuery, session: AsyncSession, mc_service
 
 
 @router.message(Command("commands"))
-async def cmd_commands(message: Message, session: AsyncSession, bot: Bot, mc_service: MinecraftService):
+async def cmd_commands(message: Message, session: AsyncSession, bot: Bot, mc_service: MinecraftService, i18n: I18n):
     """
     Принудительное обновление меню команд пользователя.
     Инвалидирует кеш в Redis и делает вызов к Telegram API.
     """
+    if message.chat.type != "private":
+        bot_info = await message.bot.get_me()
+        await message.answer(
+            i18n.get("msg-commands-group", bot_username=bot_info.username), 
+            parse_mode="HTML"
+        )
+        return
+
     user = await session.scalar(select(User).where(User.tg_id == message.from_user.id))
     role = user.role if user else "user"
     
@@ -124,24 +133,10 @@ async def cmd_commands(message: Message, session: AsyncSession, bot: Bot, mc_ser
     # Принудительно обновляем (force=True игнорирует Redis)
     await update_user_commands(bot, message.from_user.id, role, cache, force=True)
     
-    text = (
-        "✅ <b>Меню команд успешно обновлено!</b>\n\n"
-        "📌 <b>Основные команды:</b>\n"
-        "🔹 /start — Перезапуск бота\n"
-        "🔹 /info &lt;ip&gt; — Полный статус сервера\n"
-        "🔹 /players &lt;ip&gt; — Игроки онлайн\n"
-        "🔹 /ping &lt;ip&gt; — Проверка пинга\n"
-        "🔹 /motd &lt;ip&gt; — Получить MOTD\n"
-        "🔹 /version &lt;ip&gt; — Узнать версию\n"
-        "🔹 /ip &lt;ip&gt; — Безопасный IP адрес\n"
-        "🔹 /configuration — Настройки бота\n"
-    )
+    text = i18n.get("msg-commands-updated") + "\n\n"
+    text += i18n.get("msg-commands-list")
     
     if role in ["admin", "moder"]:
-        text += (
-            "\n👑 <b>Команды Администратора:</b>\n"
-            "🔹 /moder — Панель модератора\n"
-            "🔹 /tickets — Управление тикетами\n"
-        )
+        text += "\n" + i18n.get("msg-commands-admin-list")
         
     await message.answer(text, parse_mode="HTML")
