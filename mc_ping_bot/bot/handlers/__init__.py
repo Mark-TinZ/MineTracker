@@ -11,6 +11,7 @@ from .admin import router as admin_router
 from .commands import router as commands_router
 from .help import router as help_router
 from .configuration import router as configuration_router
+from .errors import error_router
 
 
 def setup_routers(dp: Dispatcher) -> None:
@@ -26,3 +27,4 @@ def setup_routers(dp: Dispatcher) -> None:
     dp.include_router(configuration_router)
     dp.include_router(user_router)
     dp.include_router(group_router)
+    dp.include_router(error_router)
