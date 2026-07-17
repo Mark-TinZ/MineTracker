@@ -8,39 +8,52 @@ from aiogram.exceptions import TelegramBadRequest
 from sqlalchemy.orm import selectinload
 from mc_ping_bot.services.minecraft import MinecraftService
 from mc_ping_bot.db.models import Chat, MonitoredServer, User
+from mc_ping_bot.services.i18n import i18n_service, current_locale
 
-def _render_tracker_message(tracker: MonitoredServer, data: Dict[str, Any]) -> str:
+def _render_tracker_message(tracker: MonitoredServer, data: Dict[str, Any], locale: str = "ru") -> str:
     """Генерация текста для закрепленного сообщения в группе."""
     title = tracker.custom_name if tracker.custom_name else f"Сервер: {tracker.server.ip_domain}"
     
-    if not data.get("online"):
-        return f"📊 <b>{title}</b>\n\n🔴 Статус: Оффлайн\n<i>Последнее обновление было недавно.</i>"
-        
-    text = f"📊 <b>{title}</b>\n\n"
-    text += f"🟢 Статус: Онлайн\n"
-    text += f"📡 Пинг: {data['latency']} ms\n"
-    
-    if tracker.show_players:
-        text += f"👥 Игроки: <b>{data['players_online']}/{data['players_max']}</b>\n"
-        if data.get("player_names"):
-            text += "Отображаемые: " + ", ".join(data["player_names"]) + "\n"
+    token = current_locale.set(locale)
+    try:
+        if not data.get("online"):
+            return (
+                f"📊 <b>{title}</b>\n\n"
+                f"🔴 {i18n_service.get('status-offline')}\n"
+                f"<i>{i18n_service.get('msg-last-update-recently')}</i>"
+            )
             
-    if tracker.show_motd and data.get("motd"):
-        text += f"\n💬 MOTD:\n<i>{data['motd']}</i>\n"
+        text = f"📊 <b>{title}</b>\n\n"
+        text += f"🟢 {i18n_service.get('status-online')}\n"
+        text += f"📡 {i18n_service.get('msg-ping')}: {data['latency']} ms\n"
         
-    if tracker.show_tps:
-        # В классическом пинге TPS нет, задел на будущее (RCON/Плагины)
-        text += f"\n⚙️ TPS: Вычисление..."
-        
-    text += "\n\n<i>🔄 Обновляется автоматически</i>"
-    return text
+        if tracker.show_players:
+            text += f"👥 {i18n_service.get('msg-players')}: <b>{data['players_online']}/{data['players_max']}</b>\n"
+            if data.get("player_names"):
+                text += f"{i18n_service.get('msg-displayed')}: " + ", ".join(data["player_names"]) + "\n"
+                
+        if tracker.show_motd and data.get("motd"):
+            text += f"\n💬 MOTD:\n<i>{data['motd']}</i>\n"
+            
+        if tracker.show_tps:
+            # В классическом пинге TPS нет, задел на будущее (RCON/Плагины)
+            text += f"\n⚙️ TPS: {i18n_service.get('msg-calculating')}..."
+            
+        text += f"\n\n<i>🔄 {i18n_service.get('msg-updated-automatically')}</i>"
+        return text
+    finally:
+        current_locale.reset(token)
 
-async def start_monitoring_loop(bot: Bot, sessionmaker: async_sessionmaker, mc_service: MinecraftService):
+from mc_ping_bot.services.maintenance import MaintenanceService
+
+async def start_monitoring_loop(bot: Bot, sessionmaker: async_sessionmaker, mc_service: MinecraftService, maintenance_service: MaintenanceService):
     """
     Основной цикл мониторинга (Background Heartbeat).
     Обновляет закрепленные сообщения в чатах каждые N секунд.
     """
     while True:
+        await maintenance_service.wait_if_maintenance()
+        
         try:
             async with sessionmaker() as session:
                 # Получаем все активные трекеры вместе с привязанными Чатами и Серверами
@@ -90,15 +103,22 @@ async def start_monitoring_loop(bot: Bot, sessionmaker: async_sessionmaker, mc_s
         except Exception as e:
             # Защита лупа от полного краша при сбое БД
             print(f"[Monitoring Loop Error] {e}")
+            import redis.exceptions
+            import sqlalchemy.exc
+            import asyncpg.exceptions
+            if isinstance(e, (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError, sqlalchemy.exc.OperationalError, asyncpg.exceptions.CannotConnectNowError, asyncpg.exceptions.ConnectionDoesNotExistError)):
+                await maintenance_service.trigger_auto_maintenance(e)
             
         await asyncio.sleep(10)
 
-async def subscription_downgrade_worker(sessionmaker: async_sessionmaker):
+async def subscription_downgrade_worker(sessionmaker: async_sessionmaker, maintenance_service: MaintenanceService):
     """
     Фоновый воркер, проверяющий истечение премиум-подписок у пользователей.
     Вызывается раз в час (3600 секунд).
     """
     while True:
+        await maintenance_service.wait_if_maintenance()
+        
         try:
             async with sessionmaker() as session:
                 # Находим пользователей, у которых премиум-статус истек
@@ -146,6 +166,11 @@ async def subscription_downgrade_worker(sessionmaker: async_sessionmaker):
         except Exception as e:
             # В production здесь должно быть логгирование (structlog)
             print(f"[Worker Error] Subscription Downgrade: {e}")
+            import redis.exceptions
+            import sqlalchemy.exc
+            import asyncpg.exceptions
+            if isinstance(e, (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError, sqlalchemy.exc.OperationalError, asyncpg.exceptions.CannotConnectNowError, asyncpg.exceptions.ConnectionDoesNotExistError)):
+                await maintenance_service.trigger_auto_maintenance(e)
             
         # Спим 1 час
         await asyncio.sleep(3600)

@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mc_ping_bot.db.models import MonitoredServer, User, Ticket
 from mc_ping_bot.config import config
+from mc_ping_bot.services.maintenance import MaintenanceService
+from mc_ping_bot.services.i18n import I18n
 
 router = Router()
 
@@ -47,8 +49,35 @@ async def cmd_moder(message: Message, session: AsyncSession):
     await message.answer(text, parse_mode="HTML")
 
 
+@router.message(Command("maintenance"))
+async def cmd_maintenance(message: Message, maintenance_service: MaintenanceService, i18n: I18n):
+    """
+    Включает или выключает режим технического обслуживания.
+    """
+    # Если бот сейчас в авто-режиме, ручное отключение его снимет.
+    # Если бот не в тех. обслуживании, он включит ручной режим.
+    
+    current_state = maintenance_service.is_manual_maintenance
+    new_state = not current_state
+    
+    maintenance_service.set_manual_maintenance(new_state)
+    
+    status_icon = i18n.get("status-on") if new_state else i18n.get("status-off")
+    auto_status = i18n.get("status-auto-on") if maintenance_service.is_auto_maintenance else i18n.get("status-auto-off")
+    can_use = i18n.get("msg-users-cannot-use") if new_state else i18n.get("msg-users-can-use")
+    
+    text = (
+        f"{i18n.get('msg-maintenance-control')}\n\n"
+        f"{i18n.get('msg-manual-mode')}: {status_icon}\n"
+        f"{i18n.get('msg-auto-mode')}: {auto_status}\n\n"
+        f"<i>{can_use}</i>"
+    )
+    
+    await message.answer(text, parse_mode="HTML")
+
+
 @router.message(F.chat.id == config.admin_chat_id, F.reply_to_message)
-async def admin_reply_handler(message: Message, session: AsyncSession):
+async def admin_reply_handler(message: Message, session: AsyncSession, i18n: I18n):
     """
     Обработчик ответов модераторов в админском чате.
     Ищет тикет по ID сообщения (на которое ответили) и пересылает ответ пользователю.
@@ -71,4 +100,4 @@ async def admin_reply_handler(message: Message, session: AsyncSession):
         # Реакция на сообщение модератора для подтверждения доставки
         await message.react([{"type": "emoji", "emoji": "👍"}])
     except Exception as e:
-        await message.reply(f"❌ Ошибка отправки пользователю:\n<code>{e}</code>", parse_mode="HTML")
+        await message.reply(i18n.get("msg-error-send-user", error=str(e)), parse_mode="HTML")
