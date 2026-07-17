@@ -18,6 +18,7 @@ from mc_ping_bot.db.database import AsyncSessionLocal, engine
 from mc_ping_bot.services.cache import RedisCacheManager
 from mc_ping_bot.services.minecraft import MinecraftService
 from mc_ping_bot.services.monitor import subscription_downgrade_worker
+from mc_ping_bot.services.maintenance import MaintenanceService
 
 # Импорт хендлеров и миддлварей
 from mc_ping_bot.bot.handlers import setup_routers
@@ -68,6 +69,12 @@ async def main():
     dp["sessionmaker"] = AsyncSessionLocal
 
     # 6. Регистрация Middleware
+    
+    # Outer middleware для технического обслуживания (самый первый, чтобы ловить все ошибки БД)
+    from mc_ping_bot.bot.middlewares.maintenance import MaintenanceMiddleware
+    maintenance_service = MaintenanceService(bot, redis_client, AsyncSessionLocal, config.admin_chat_id)
+    dp.update.outer_middleware(MaintenanceMiddleware(maintenance_service))
+    
     # Outer middleware срабатывает ДО любых фильтров, что идеально для получения БД-сессии
     dp.update.outer_middleware(DatabaseMiddleware(AsyncSessionLocal))
     
@@ -106,15 +113,20 @@ async def main():
         
         # Запуск фонового воркера даунгрейда подписок
         # Обязательно сохраняем ссылку на таску, чтобы сборщик мусора Python (GC) её не убил!
-        task = asyncio.create_task(subscription_downgrade_worker(AsyncSessionLocal))
+        task = asyncio.create_task(subscription_downgrade_worker(AsyncSessionLocal, maintenance_service))
         background_tasks.add(task)
         task.add_done_callback(background_tasks.discard)
         
         # Запуск основного цикла мониторинга (Background Heartbeat)
         from mc_ping_bot.services.monitor import start_monitoring_loop
-        task_loop = asyncio.create_task(start_monitoring_loop(bot, AsyncSessionLocal, mc_service))
+        task_loop = asyncio.create_task(start_monitoring_loop(bot, AsyncSessionLocal, mc_service, maintenance_service))
         background_tasks.add(task_loop)
         task_loop.add_done_callback(background_tasks.discard)
+        
+        # Запуск воркера авто-восстановления (Health Check)
+        task_health = asyncio.create_task(maintenance_service.health_check_worker())
+        background_tasks.add(task_health)
+        task_health.add_done_callback(background_tasks.discard)
 
     async def on_shutdown(dispatcher: Dispatcher):
         logger.warning("Bot is shutting down. Graceful shutdown initiated...")
